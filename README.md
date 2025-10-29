@@ -80,13 +80,6 @@ This matches real-world payment gateway behavior (gateways often retry webhooks;
   - Redis stores jobs
   - RQ worker pulls jobs and runs long-running work outside the request/response path
 
-- **Render**: deployment target
-
-  - Free web service tier with 750 free instance-hours/month per workspace, can spin down when idle and wake on traffic
-  - Free/low-cost Redis-like service for queues
-  - Background Worker service to run RQ in production
-    (Sources: Render free tier docs as of Oct 29, 2025, which describe 750 free instance hours/month, automatic spin-down after 15 minutes idle, and a “Hobby/Free” style plan for personal projects.)
-
 ---
 
 ## Project Structure
@@ -105,7 +98,6 @@ app/
 
 Dockerfile
 docker-compose.yml
-render.yaml
 requirements.txt
 .env.example
 README.md
@@ -229,127 +221,9 @@ Environment values inside those containers are already configured so `api` talks
 
 ---
 
-## Deployment (Render)
-
-### 1. Create a free MongoDB Atlas cluster
-
-- Go to MongoDB Atlas → Create new cluster → choose **M0 (Free Forever)** tier.
-- M0 gives ~512MB storage, shared RAM/CPU, and is designed for learning / prototypes at $0. (Source: MongoDB Atlas pricing info as of Oct 29, 2025.)
-- Create a database user + password.
-- Whitelist your IP(s).
-- Copy your connection string, e.g.
-  `mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/webhooks_db`
-
-### 2. Push this repo to GitHub (public for the interview)
-
-Include:
-
-- all source code
-- `Dockerfile`
-- `docker-compose.yml`
-- `render.yaml`
-- `.env.example` (no secrets)
-- this README.md
-
-### 3. Render setup
-
-1. Log into Render.
-
-2. Create a new Redis / Key-Value service (free tier is allowed for personal/small projects; it's intended for hobby/testing workloads and counts against free hours).
-
-3. Connect your GitHub repo as a “Blueprint deploy” using `render.yaml`.
-
-4. For both the `webhook-api` service and the `webhook-worker` service in Render:
-
-   - Add the following environment variables:
-
-     - `MONGO_URL` = your Atlas URI
-     - `MONGO_DB` = `webhooks_db`
-     - `REDIS_URL` = the Redis URL Render shows you, e.g. `redis://:password@host:6379/0`
-     - `PROCESS_DELAY_SECONDS` = `30`
-
-   Render’s free web services get 750 free instance-hours/month and will spin down after 15 minutes idle, then spin back up when hit. (Source: Render free tier docs as of Oct 29, 2025.) The worker may or may not allow `plan: free`; if not, pick the lowest-cost Hobby worker.
-
-5. Deploy.
-
-### 4. After deploy
-
-- You’ll get a public URL like `https://webhook-api-xxxx.onrender.com`.
-- `GET /` should return `{ "status": "HEALTHY", ... }`.
-- `GET /docs` should open FastAPI Swagger docs.
-- You can `POST /v1/webhooks/transactions` to simulate Razorpay webhook calls.
-- The background worker will be running in Render and will update MongoDB Atlas after ~30 seconds.
-
-This URL is what you send to:
-
-- Interviewer
-- (Later) Razorpay’s “Webhook URL” field
-
----
-
-## Razorpay-style webhook hookup
-
-In Razorpay Dashboard:
-
-- Go to Settings → Webhooks → Add New Webhook
-- Webhook URL = `https://<your-render-url>/v1/webhooks/transactions`
-- Secret = (random string you generate and store in an env var later for signature verification)
-- Choose the events you want Razorpay to send
-
-Razorpay will POST JSON to that URL; our service will:
-
-- save it (`status="RECEIVED"`)
-- enqueue it
-- respond `202 Accepted`
-
----
-
-## Environment Variables
-
-In local `.env.example` we show how to configure:
-
-```env
-MONGO_URL=mongodb://mongo:27017
-MONGO_DB=webhooks_db
-REDIS_URL=redis://redis:6379/0
-PROCESS_DELAY_SECONDS=30
-```
-
-In production (Render), you’ll override:
-
-```text
-MONGO_URL=mongodb+srv://<user>:<pass>@<cluster>.mongodb.net/webhooks_db
-REDIS_URL=redis://:<password>@<render-redis-host>:6379/0
-```
-
-**Do not commit real credentials.** Add them in Render’s dashboard under Environment.
-
----
-
-## What to show the interviewer
-
-1. This README.md (so they understand architecture + how to run it).
-2. The running Render URL (so they can curl it live).
-3. The GitHub repo link with:
-
-   - code
-   - docker-compose.yml (local reproduction)
-   - render.yaml (infra-as-code)
-   - .env.example (so they know which env vars matter)
-
-This proves:
-
-- You designed for async processing and availability.
-- You handled idempotency properly.
-- You thought about real deployment (Redis queue, worker process, free-tier infra).
-- You documented it well enough that someone else can spin it up quickly.
-
----
-
 ## Contact / Notes
 
 If this is being reviewed:
 
 - Please start with `docker compose up --build` and test `/v1/webhooks/transactions`.
 - Then review `app/workers/processor.py` + `app/repository/transactions.py` to see the idempotency logic.
-- Finally, open `render.yaml` to see how this ships to Render in a free/hobby-friendly way.
