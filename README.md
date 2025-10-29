@@ -194,7 +194,7 @@ Environment values inside those containers are already configured so `api` talks
 
    ```bash
    python3.11 -m venv .venv
-   source .venv/bin/activate
+   source .venv/Scripts/activate # for windows
    pip install --upgrade pip
    pip install -r requirements.txt
    ```
