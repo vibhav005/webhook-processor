@@ -1,40 +1,56 @@
 services:
+  #
+  # 1. Public FastAPI service (the webhook API)
+  #
   - type: web
     name: webhook-api
-    env: docker
-    plan: free
+    runtime: docker # use Dockerfile to build container
+    plan: free # web service CAN be on free tier
     dockerfilePath: ./Dockerfile
+    # Override the Dockerfile CMD in production so we bind $PORT (Render expects this).
+    # We wrap it in /bin/bash -c so $PORT expands.
+    dockerCommand: /bin/bash -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1"
     envVars:
       - key: MONGO_URL
-        value: mongodb+srv://webhook:processor@webhook-processor.l0edef3.mongodb.net/?appName=webhook-processor
+        sync: false # you'll fill this in at deploy time in Render UI
       - key: MONGO_DB
         value: webhooks_db
-      - key: REDIS_URL
-        value: ${redis.REDIS_URL}
       - key: PROCESS_DELAY_SECONDS
         value: "30"
-    # Dockerfile's CMD already runs uvicorn app.main:app ...
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: redis
+          property: connectionString
 
+  #
+  # 2. Background worker service (RQ worker that consumes jobs)
+  #
   - type: worker
     name: webhook-worker
-    env: docker
-    plan: free
+    runtime: docker
+    plan: starter # background workers can't use free plan :contentReference[oaicite:7]{index=7}
     dockerfilePath: ./Dockerfile
-    startCommand: >
-      rq worker
-      -u ${redis.REDIS_URL}
-      transactions
+    # Run the RQ worker and point it at Redis.
+    dockerCommand: /bin/bash -c "rq worker -u $REDIS_URL transactions"
     envVars:
       - key: MONGO_URL
-        value: mongodb+srv://webhook:processor@webhook-processor.l0edef3.mongodb.net/?appName=webhook-processor
+        sync: false
       - key: MONGO_DB
         value: webhooks_db
-      - key: REDIS_URL
-        value: ${redis.REDIS_URL}
       - key: PROCESS_DELAY_SECONDS
         value: "30"
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: redis
+          property: connectionString
 
+  #
+  # 3. Redis / Key Value service
+  #
   - type: redis
     name: redis
-    plan: free
-    # Render creates a Redis/Key-Value service and exposes REDIS_URL
+    plan: free # Render free Key Value / Redis-like tier is allowed
+    ipAllowList: [] # required; [] = internal-only access for security :contentReference[oaicite:8]{index=8}
+    maxmemoryPolicy: allkeys-lru # optional; eviction policy
