@@ -1,4 +1,3 @@
-# app/db/mongo.py
 from pymongo import MongoClient, ASCENDING
 from pymongo.collection import Collection
 from app.core.config import get_settings

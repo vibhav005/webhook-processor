@@ -1,4 +1,3 @@
-# app/queues/redis_conn.py
 import redis
 from rq import Queue
 from app.core.config import get_settings

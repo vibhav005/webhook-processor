@@ -1,15 +1,8 @@
-# app/repository/transactions.py
 from datetime import datetime
 from pymongo.errors import DuplicateKeyError
 from app.db.mongo import get_collection
 
 def create_or_get_transaction(data: dict):
-    """
-    Try to insert the transaction with status=RECEIVED.
-    If it already exists (DuplicateKeyError), just read it back.
-
-    Returns (doc, created_flag)
-    """
     coll = get_collection()
     now = datetime.utcnow()
 

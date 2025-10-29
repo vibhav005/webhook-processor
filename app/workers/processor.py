@@ -1,4 +1,3 @@
-# app/workers/processor.py
 import time
 from datetime import datetime
 from app.db.mongo import get_collection
