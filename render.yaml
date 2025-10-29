@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: webhook-api
+    env: docker
+    plan: free # pick "Free" tier in Render UI if available
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: MONGO_URL
+        value: <your MongoDB Atlas connection string>
+      - key: MONGO_DB
+        value: webhooks_db
+      - key: REDIS_URL
+        # Render injects a REDIS_URL / internal URL for its Redis service.
+        # If not auto, paste redis://:<password>@<host>:6379/0
+        value: ${redis.REDIS_URL}
+      - key: PROCESS_DELAY_SECONDS
+        value: "30"
+    # Render runs CMD from Dockerfile (uvicorn app.main:app ...)
+
+  - type: worker
+    name: webhook-worker
+    env: docker
+    plan: free # or lowest-cost worker tier available
+    dockerfilePath: ./Dockerfile
+    startCommand: >
+      rq worker
+      -u ${redis.REDIS_URL}
+      transactions
+    envVars:
+      - key: MONGO_URL
+        value: <your MongoDB Atlas connection string>
+      - key: MONGO_DB
+        value: webhooks_db
+      - key: REDIS_URL
+        value: ${redis.REDIS_URL}
+      - key: PROCESS_DELAY_SECONDS
+        value: "30"
+
+  - type: redis
+    name: redis
+    plan: free # small free Redis / Key-Value instance
+    # Render will expose a REDIS_URL-like secret you can reference
+    # as ${redis.REDIS_URL} in other services' envVars

@@ -1,0 +1,52 @@
+# docker-compose.yml
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: webhook_api
+    environment:
+      MONGO_URL: mongodb+srv://webhook:processor@webhook-processor.l0edef3.mongodb.net/?appName=webhook-processor
+      MONGO_DB: webhooks_db
+      REDIS_URL: redis://redis:6379/0
+      PROCESS_DELAY_SECONDS: 30
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mongo
+      - redis
+    command: >
+      uvicorn app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --workers 1
+
+  worker:
+    build: .
+    container_name: webhook_worker
+    environment:
+      MONGO_URL: mongodb+srv://webhook:processor@webhook-processor.l0edef3.mongodb.net/?appName=webhook-processor
+      MONGO_DB: webhooks_db
+      REDIS_URL: redis://redis:6379/0
+      PROCESS_DELAY_SECONDS: 30
+    depends_on:
+      - mongo
+      - redis
+    command: >
+      rq worker
+      -u redis://redis:6379/0
+      transactions
+
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"

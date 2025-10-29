@@ -1,0 +1,108 @@
+####################################
+# Python / FastAPI project ignores #
+####################################
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.venv.bak/
+venv.bak/
+env.bak/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Unit test / coverage reports (if you add tests later)
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Jupyter / IPython (not really in this proj, but safe)
+.ipynb_checkpoints/
+
+####################################
+# Environment & config secrets     #
+####################################
+
+# Never commit real secrets. You WILL commit .env.example (placeholder only).
+.env
+.env.local
+.env.development
+.env.production
+*.env.backup
+*.env.local.*
+
+# Docker override files you might create locally
+docker-compose.override.yml
+docker-compose.local.yml
+
+####################################
+# OS / Editor junk                 #
+####################################
+
+# macOS Finder stuff
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows thumbnails / metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# VSCode / editor configs
+.vscode/
+*.code-workspace
+
+# JetBrains IDE
+.idea/
+
+# Logs
+*.log
+logs/
+log/
+
+####################################
+# Containers / runtime state       #
+####################################
+
+# Redis / Mongo volumes you might mount locally
+data/
+mongo-data/
+redis-data/
+
+# Docker build artifacts
+*.pid
+*.seed
+*.pid.lock
+
+####################################
+# MyPy / Ruff / etc (future-proof) #
+####################################
+
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.pyre/
+.pytype/
