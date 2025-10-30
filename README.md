@@ -1,5 +1,13 @@
 # Webhook Processor Service (FastAPI + MongoDB + Redis/RQ)
 
+---
+
+title: Webhook Processor API
+sdk: docker
+app_port: 8000
+
+---
+
 ## Overview
 
 This service receives transaction webhooks from an external payment provider (e.g. Razorpay), acknowledges them immediately with HTTP 202, and processes them asynchronously in a background worker.
